@@ -1,0 +1,10 @@
+{
+    "name": "socket-chat-example",
+    "version": "0.0.1",
+    "description": "my first socket.io app",
+    "dependencies": {
+        "chompengine": "^1.0.0",
+        "express": "^4.17.2",
+        "socket.io": "^4.4.1"
+    }
+}

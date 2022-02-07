@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+    <canvas id="gc" width="400" height="400" style="background-color: black;"></canvas>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let canvas = document.getElementById("gc");
+        let ctx = canvas.getContext("2d");
+        let gameObject, order, xf = 0, yf = 0;
+        var socket = io();
+        let kp = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.which == 39) {
+                kp.right = true;
+            } else if (e.which == 37) {
+                kp.left = true;
+            } else if (e.which == 38) {
+                kp.up = true;
+            } else if (e.which == 40) {
+                kp.down = true;
+            }
+        });
+        document.addEventListener("keyup", (e) => {
+            if (e.which == 39) {
+                kp.right = false;
+            } else if (e.which == 37) {
+                kp.left = false;
+            } else if (e.which == 38) {
+                kp.up = false;
+            } else if (e.which == 40) {
+                kp.down = false;
+            }
+        });
+
+        function returnCanvasX(canvas) {
+            if (canvas != undefined) {
+                return canvas.width; 
+            }
+            return 0;
+        }
+
+        function returnCanvasY(canvas) {
+            if (canvas != undefined) {
+                return canvas.height; 
+            }
+            return 0;
+        }
+
+        function render(gameObject) {
+            ctx.clearRect(0, 0, returnCanvasX(canvas), returnCanvasY(canvas));
+            ctx.strokeStyle = "magenta";
+            if (gameObject.circles.length > 0) {
+                gameObject.xoffset = -gameObject.circles[order].x + (returnCanvasX(canvas) / 2);
+                gameObject.yoffset = -gameObject.circles[order].y + (returnCanvasY(canvas) / 2);
+                for (let c of gameObject.circles) {
+                    ctx.beginPath();
+                    ctx.arc(c.x + gameObject.xoffset, c.y + gameObject.yoffset, c.r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            for (let l of gameObject.lines) {
+                ctx.beginPath();
+                ctx.moveTo(l.x1 + gameObject.xoffset, l.y1 + gameObject.yoffset);
+                ctx.lineTo(l.x2 + gameObject.xoffset, l.y2 + gameObject.yoffset);
+                ctx.stroke();
+            }
+            ctx.beginPath();
+            ctx.moveTo(gameObject.wx1 + gameObject.xoffset, gameObject.wy1 + gameObject.yoffset);
+            ctx.lineTo(gameObject.wx2 + gameObject.xoffset, gameObject.wy1 + gameObject.yoffset);
+            ctx.lineTo(gameObject.wx2 + gameObject.xoffset, gameObject.wy2 + gameObject.yoffset);
+            ctx.lineTo(gameObject.wx1 + gameObject.xoffset, gameObject.wy2 + gameObject.yoffset);
+            ctx.lineTo(gameObject.wx1 + gameObject.xoffset, gameObject.wy1 + gameObject.yoffset);
+            ctx.stroke();
+        }
+
+        function game() {
+            for (let i = 0; i < gameObject.orders.length; i++) {
+                if (gameObject == undefined) break;
+			    if (gameObject.orders[i].id == socket.id) {
+                    order = gameObject.orders[i].order;
+                }
+            }
+            xf += (4 * kp.right) + (-4 * kp.left);
+            yf += (4 * kp.down) + (-4 * kp.up);
+            if (gameObject.circles.length > order)
+                socket.emit('action', { x: gameObject.circles[order].x + xf / gameObject.circles[order].r, y: gameObject.circles[order].y + yf / gameObject.circles[order].r, id: socket.id });
+            xf -= xf / 30;
+            yf -= yf / 30;
+            render(gameObject);
+            window.requestAnimationFrame(game);
+        } window.requestAnimationFrame(game);
+
+        socket.on('start', () => {
+            game();
+        });
+
+        socket.on('update', (sentGameObject) => {
+            gameObject = sentGameObject;
+        });
+    </script>
+
+</body>
+</html>
