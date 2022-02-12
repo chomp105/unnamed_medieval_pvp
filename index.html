@@ -1,20 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            /*overflow: hidden;*/
+            background-color: grey;
+        }
+        
+        #icon {
+            color: white;
+        }
+        
+        .fullScreen {
+            position: absolute;
+            top: calc(100vh - 60px);
+            left: calc(100vw - 60px);
+        }
+        
+        .minimized {
+            position: absolute;
+            top: 320px;
+            left: 320px;
+        }
+        
+        .visible {
+            display: block;
+        }
+        
+        .invisible {
+            display: none;
+        }
+    </style>
+    <script type="module" src="https://unpkg.com/ionicons@4.5.10-0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule="" src="https://unpkg.com/ionicons@4.5.10-0/dist/ionicons/ionicons.js"></script>
 </head>
-<body>
-    
-    <canvas id="gc" width="400" height="400" style="background-color: black;"></canvas>
 
+<body>
+    <script src="https://unpkg.com/vue@3"></script>
+    <div id="app">
+        <canvas id="gc" width="400" height="400" style="background-color: black;"></canvas>
+        <div id="icon" @click="changeSize" :class="screenSize">
+            <div :class="iconVisibility('minimized')">
+                <ion-icon v-pre name="expand"></ion-icon>
+            </div>
+            <div :class="iconVisibility('fullScreen')">
+                <ion-icon v-pre name="contract"></ion-icon>
+            </div>
+        </div>
+    </div>
+    <script>
+        Vue.createApp({
+            data() {
+                return {
+                    screenSize: 'minimized'
+                }
+            },
+            methods: {
+                changeSize() {
+                    this.screenSize = this.screenSize == 'minimized' ? 'fullScreen' : 'minimized';
+                    if (this.screenSize == 'fullScreen') {
+                        document.getElementById('gc').width = document.documentElement.clientWidth;
+                        document.getElementById('gc').height = document.documentElement.clientHeight;
+                    } else {
+                        document.getElementById('gc').width = 400;
+                        document.getElementById('gc').height = 400;
+                    }
+                },
+                iconVisibility(e) {
+                    if (e == this.screenSize) {
+                        return 'visible';
+                    }
+                    return 'invisible';
+                }
+            }
+        }).mount('#app');
+    </script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         let canvas = document.getElementById("gc");
         let ctx = canvas.getContext("2d");
-        let gameObject, order, xf = 0, yf = 0;
+        let gameObject, order, xf = 0,
+            yf = 0;
         var socket = io();
         let kp = {
             up: false,
@@ -48,14 +125,14 @@
 
         function returnCanvasX(canvas) {
             if (canvas != undefined) {
-                return canvas.width; 
+                return canvas.width;
             }
             return 0;
         }
 
         function returnCanvasY(canvas) {
             if (canvas != undefined) {
-                return canvas.height; 
+                return canvas.height;
             }
             return 0;
         }
@@ -90,19 +167,24 @@
         function game() {
             for (let i = 0; i < gameObject.orders.length; i++) {
                 if (gameObject == undefined) break;
-			    if (gameObject.orders[i].id == socket.id) {
+                if (gameObject.orders[i].id == socket.id) {
                     order = gameObject.orders[i].order;
                 }
             }
             xf += (4 * kp.right) + (-4 * kp.left);
             yf += (4 * kp.down) + (-4 * kp.up);
             if (gameObject.circles.length > order)
-                socket.emit('action', { x: gameObject.circles[order].x + xf / gameObject.circles[order].r, y: gameObject.circles[order].y + yf / gameObject.circles[order].r, id: socket.id });
+                socket.emit('action', {
+                    x: gameObject.circles[order].x + xf / gameObject.circles[order].r,
+                    y: gameObject.circles[order].y + yf / gameObject.circles[order].r,
+                    id: socket.id
+                });
             xf -= xf / 30;
             yf -= yf / 30;
             render(gameObject);
             window.requestAnimationFrame(game);
-        } window.requestAnimationFrame(game);
+        }
+        window.requestAnimationFrame(game);
 
         socket.on('start', () => {
             game();
@@ -112,6 +194,6 @@
             gameObject = sentGameObject;
         });
     </script>
-
 </body>
+
 </html>
