@@ -25,15 +25,15 @@ setInterval(() => {
 }, 1000/120);
 
 io.on('connection', (socket) => {
-	chomp.circles.push(new engine.Circle(Math.random() * 400, Math.random() * 400, 50, socket.id));
+	chomp.circles.push(new engine.Circle(Math.random() * 400, Math.random() * 400, 50, "dynamic"));
 	orders.push({id: socket.id, order: chomp.circles.length - 1});
 	socket.emit('update', {circles: chomp.circles, lines: chomp.lines, wx1: chomp.wx1, wy1: chomp.wy1, wx2: chomp.wx2, wy2: chomp.wy2, orders: orders });
 	socket.emit('start');
 	socket.on('action', (action) => {
-		for (let c of chomp.circles) {
-			if (c.id == action.id) {
-				c.x = action.x;
-				c.y = action.y;
+		for (let i = 0; i < orders.length; i++) {
+			if (orders[i].id == action.id) {
+				chomp.circles[i].x = action.x;
+				chomp.circles[i].y = action.y;
 			}
 		}
 	});
