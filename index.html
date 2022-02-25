@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -45,8 +44,9 @@
     <script type="module" src="https://unpkg.com/ionicons@4.5.10-0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule="" src="https://unpkg.com/ionicons@4.5.10-0/dist/ionicons/ionicons.js"></script>
 </head>
-
 <body>
+    <img src="knight.png" id="knight" style="display: none;" />
+
     <script src="https://unpkg.com/vue@3"></script>
     <div id="app">
         <canvas id="gc" width="400" height="400" style="background-color: black;"></canvas>
@@ -90,8 +90,9 @@
     <script>
         let canvas = document.getElementById("gc");
         let ctx = canvas.getContext("2d");
-        let gameObject, order, xf = 0,
-            yf = 0;
+        let gameObject, xoffset, yoffset, order, xf = 0, yf = 0;
+        let knight_png = document.getElementById("knight");
+        let angle;
         var socket = io();
         let kp = {
             up: false,
@@ -101,99 +102,114 @@
         }
 
         document.addEventListener("keydown", (e) => {
-            if (e.which == 39) {
+            if (e.key == 'd') {
                 kp.right = true;
-            } else if (e.which == 37) {
+            } else if (e.key == 'a') {
                 kp.left = true;
-            } else if (e.which == 38) {
+            } else if (e.key == 'w') {
                 kp.up = true;
-            } else if (e.which == 40) {
+            } else if (e.key == 's') {
                 kp.down = true;
             }
         });
         document.addEventListener("keyup", (e) => {
-            if (e.which == 39) {
+            if (e.key == 'd') {
                 kp.right = false;
-            } else if (e.which == 37) {
+            } else if (e.key == 'a') {
                 kp.left = false;
-            } else if (e.which == 38) {
+            } else if (e.key == 'w') {
                 kp.up = false;
-            } else if (e.which == 40) {
+            } else if (e.key == 's') {
                 kp.down = false;
             }
+        });
+        document.addEventListener('mousemove', (e) => {
+            angle = Math.atan2(-(e.clientX - (canvas.width/2)), (e.clientY - (canvas.height/2))) + Math.PI;
         });
 
         function returnCanvasX(canvas) {
             if (canvas != undefined) {
-                return canvas.width;
+                return canvas.width; 
             }
             return 0;
         }
-
         function returnCanvasY(canvas) {
             if (canvas != undefined) {
-                return canvas.height;
+                return canvas.height; 
             }
             return 0;
         }
 
         function render(gameObject) {
+            xoffset = -gameObject.circles[order].x + (returnCanvasX(canvas) / 2);
+            yoffset = -gameObject.circles[order].y + (returnCanvasY(canvas) / 2);
             ctx.clearRect(0, 0, returnCanvasX(canvas), returnCanvasY(canvas));
+
+            ctx.fillStyle='#0a1707';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle='#2e6e21';
+            ctx.fillRect(xoffset, yoffset, 1000, 1000);
+            ctx.strokeStyle = '#26571c';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(xoffset, i * 200 + yoffset);
+                ctx.lineTo(xoffset + 1000, i * 200 + yoffset);
+                ctx.stroke();
+            }
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * 200 + xoffset, yoffset);
+                ctx.lineTo(i * 200 + xoffset, yoffset + 1000);
+                ctx.stroke();             
+            }
+            ctx.lineWidth = 10;
+            ctx.strokeRect(xoffset, yoffset, 1000, 1000);
+            ctx.lineWidth = 3;
+
             ctx.strokeStyle = "magenta";
             if (gameObject.circles.length > 0) {
-                gameObject.xoffset = -gameObject.circles[order].x + (returnCanvasX(canvas) / 2);
-                gameObject.yoffset = -gameObject.circles[order].y + (returnCanvasY(canvas) / 2);
                 for (let c of gameObject.circles) {
-                    ctx.beginPath();
-                    ctx.arc(c.x + gameObject.xoffset, c.y + gameObject.yoffset, c.r, 0, Math.PI * 2);
-                    ctx.stroke();
+                    ctx.translate(c.x + xoffset, c.y + yoffset);
+                    ctx.rotate(c.angle);
+                    ctx.drawImage(knight, -52, -62, 104, 180);
+                    ctx.rotate(-c.angle);
+                    ctx.translate(-(c.x + xoffset), -(c.y + yoffset));
                 }
             }
             for (let l of gameObject.lines) {
                 ctx.beginPath();
-                ctx.moveTo(l.x1 + gameObject.xoffset, l.y1 + gameObject.yoffset);
-                ctx.lineTo(l.x2 + gameObject.xoffset, l.y2 + gameObject.yoffset);
+                ctx.moveTo(l.x1 + xoffset, l.y1 + yoffset);
+                ctx.lineTo(l.x2 + xoffset, l.y2 + yoffset);
                 ctx.stroke();
             }
-            ctx.beginPath();
-            ctx.moveTo(gameObject.wx1 + gameObject.xoffset, gameObject.wy1 + gameObject.yoffset);
-            ctx.lineTo(gameObject.wx2 + gameObject.xoffset, gameObject.wy1 + gameObject.yoffset);
-            ctx.lineTo(gameObject.wx2 + gameObject.xoffset, gameObject.wy2 + gameObject.yoffset);
-            ctx.lineTo(gameObject.wx1 + gameObject.xoffset, gameObject.wy2 + gameObject.yoffset);
-            ctx.lineTo(gameObject.wx1 + gameObject.xoffset, gameObject.wy1 + gameObject.yoffset);
-            ctx.stroke();
         }
 
         function game() {
             for (let i = 0; i < gameObject.orders.length; i++) {
                 if (gameObject == undefined) break;
-                if (gameObject.orders[i].id == socket.id) {
+			    if (gameObject.orders[i].id == socket.id) {
                     order = gameObject.orders[i].order;
                 }
             }
             xf += (4 * kp.right) + (-4 * kp.left);
             yf += (4 * kp.down) + (-4 * kp.up);
-            if (gameObject.circles.length > order)
-                socket.emit('action', {
-                    x: gameObject.circles[order].x + xf / gameObject.circles[order].r,
-                    y: gameObject.circles[order].y + yf / gameObject.circles[order].r,
-                    id: socket.id
-                });
+            if (gameObject.circles.length > order) {
+                socket.emit('action', { x: gameObject.circles[order].x + xf / gameObject.circles[order].r, y: gameObject.circles[order].y + yf / gameObject.circles[order].r, angle: angle });
+            }
             xf -= xf / 30;
             yf -= yf / 30;
             render(gameObject);
             window.requestAnimationFrame(game);
-        }
-        window.requestAnimationFrame(game);
-
-        socket.on('start', () => {
-            game();
-        });
+        } window.requestAnimationFrame(game);
 
         socket.on('update', (sentGameObject) => {
             gameObject = sentGameObject;
         });
+
+        socket.on('start', () => {
+            game();
+        });
     </script>
 </body>
-
 </html>
