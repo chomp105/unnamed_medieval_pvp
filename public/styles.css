@@ -1,0 +1,34 @@
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    overflow: hidden;
+    background-color: grey;
+}
+
+#icon {
+    color: white;
+}
+
+.fullScreen {
+    position: absolute;
+    top: calc(100vh - 60px);
+    left: calc(100vw - 60px);
+}
+
+.minimized {
+    position: absolute;
+    top: 320px;
+    left: 320px;
+}
+
+.visible {
+    display: block;
+}
+
+.invisible {
+    display: none;
+}
