@@ -1,54 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <style>
-        * {
-            padding: 0;
-            margin: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            /*overflow: hidden;*/
-            background-color: grey;
-        }
-        
-        #icon {
-            color: white;
-        }
-        
-        .fullScreen {
-            position: absolute;
-            top: calc(100vh - 60px);
-            left: calc(100vw - 60px);
-        }
-        
-        .minimized {
-            position: absolute;
-            top: 320px;
-            left: 320px;
-        }
-        
-        .visible {
-            display: block;
-        }
-        
-        .invisible {
-            display: none;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
     <script type="module" src="https://unpkg.com/ionicons@4.5.10-0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule="" src="https://unpkg.com/ionicons@4.5.10-0/dist/ionicons/ionicons.js"></script>
 </head>
-<body>
-    <img src="knight.png" id="knight" style="display: none;" />
-    <img src="orc.png" id="orc" style="display: none;" />
-    <img src="tree.png" id="tree" style="display: none;" />
 
+<body>
+    <img src="images/knight.png" id="knight" style="display: none;" />
+    <img src="images/orc.png" id="orc" style="display: none;" />
+    <img src="images/tree.png" id="tree" style="display: none;" />
+    <img src="images/axe.png" id="axe" style="display: none;" />
     <script src="https://unpkg.com/vue@3"></script>
     <div id="app">
         <canvas id="gc" width="400" height="400" style="background-color: black;"></canvas>
@@ -61,173 +28,9 @@
             </div>
         </div>
     </div>
-    <script>
-        Vue.createApp({
-            data() {
-                return {
-                    screenSize: 'minimized'
-                }
-            },
-            created() {
-                window.addEventListener("resize", this.onResize);
-            },
-            destroyed() {
-                window.removeEventListener("resize", this.onResize);
-            },
-            methods: {
-                changeSize() {
-                    this.screenSize = this.screenSize == 'minimized' ? 'fullScreen' : 'minimized';
-                    if (this.screenSize == 'fullScreen') {
-                        document.getElementById('gc').width = document.documentElement.clientWidth;
-                        document.getElementById('gc').height = document.documentElement.clientHeight;
-                    } else {
-                        document.getElementById('gc').width = 400;
-                        document.getElementById('gc').height = 400;
-                    }
-                },
-                onResize(e) {
-                    if (this.screenSize == 'fullScreen') {
-                        document.getElementById('gc').width = document.documentElement.clientWidth;
-                        document.getElementById('gc').height = document.documentElement.clientHeight;
-                    }
-                },
-                iconVisibility(e) {
-                    if (e == this.screenSize) {
-                        return 'visible';
-                    }
-                    return 'invisible';
-                }
-            }
-        }).mount('#app');
-    </script>
+    <script src="scripts/vue_script.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-        let canvas = document.getElementById("gc");
-        let ctx = canvas.getContext("2d");
-        let gameObject, xoffset, yoffset, order, xf = 0, yf = 0, angle, lastTime = Date.now(), step = 0;
-        var socket = io();
-        let kp = {
-            up: false,
-            down: false,
-            left: false,
-            right: false
-        }
-
-        document.addEventListener("keydown", (e) => {
-            if (e.key == 'd') {
-                kp.right = true;
-            } else if (e.key == 'a') {
-                kp.left = true;
-            } else if (e.key == 'w') {
-                kp.up = true;
-            } else if (e.key == 's') {
-                kp.down = true;
-            }
-        });
-        document.addEventListener("keyup", (e) => {
-            if (e.key == 'd') {
-                kp.right = false;
-            } else if (e.key == 'a') {
-                kp.left = false;
-            } else if (e.key == 'w') {
-                kp.up = false;
-            } else if (e.key == 's') {
-                kp.down = false;
-            }
-        });
-        document.addEventListener('mousemove', (e) => {
-            angle = Math.atan2(-(e.clientX - (canvas.width/2)), (e.clientY - (canvas.height/2))) + Math.PI;
-        });
-
-        function returnCanvasX(canvas) {
-            if (canvas != undefined) {
-                return canvas.width; 
-            }
-            return 0;
-        }
-        function returnCanvasY(canvas) {
-            if (canvas != undefined) {
-                return canvas.height; 
-            }
-            return 0;
-        }
-
-        function render(gameObject) {
-            xoffset = -gameObject.circles[order].x + (returnCanvasX(canvas) / 2);
-            yoffset = -gameObject.circles[order].y + (returnCanvasY(canvas) / 2);
-            ctx.clearRect(0, 0, returnCanvasX(canvas), returnCanvasY(canvas));
-
-            ctx.fillStyle='#0a1707';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle='#1e572a';
-            ctx.fillRect(xoffset, yoffset, gameObject.wx2, gameObject.wy2);
-            ctx.strokeStyle = '#234d2c';
-            ctx.lineWidth = 3;
-            for (let i = 0; i < gameObject.wx2 / 200; i++) {
-                ctx.beginPath();
-                ctx.moveTo(xoffset, i * 200 + yoffset);
-                ctx.lineTo(xoffset + gameObject.wx2, i * 200 + yoffset);
-                ctx.stroke();
-            }
-            for (let i = 0; i < gameObject.wx2 / 200; i++) {
-                ctx.beginPath();
-                ctx.moveTo(i * 200 + xoffset, yoffset);
-                ctx.lineTo(i * 200 + xoffset, yoffset + gameObject.wy2);
-                ctx.stroke();             
-            }
-            ctx.lineWidth = 10;
-            ctx.strokeRect(xoffset, yoffset, gameObject.wx2, gameObject.wy2);
-            ctx.lineWidth = 3;
-
-            ctx.strokeStyle = "magenta";
-            if (gameObject.circles.length > 0) {
-                for (let c of gameObject.circles) {
-                    if (c.type != 'tree') {
-                        ctx.translate(c.x + xoffset, c.y + yoffset);
-                        ctx.rotate(c.angle);
-                        ctx.drawImage((c.type == 'knight') ? knight : orc, -55, -65, 110, 140);
-                        ctx.rotate(-c.angle);
-                        ctx.translate(-(c.x + xoffset), -(c.y + yoffset));
-                    } else if (c.type == 'tree') {
-                        let width = c.r + 50;
-                        ctx.drawImage(tree, c.x + xoffset - width, c.y + yoffset - width, width * 2, width * 2);
-                    }
-                }
-            }
-            for (let l of gameObject.lines) {
-                ctx.beginPath();
-                ctx.moveTo(l.x1 + xoffset, l.y1 + yoffset);
-                ctx.lineTo(l.x2 + xoffset, l.y2 + yoffset);
-                ctx.stroke();
-            }
-        }
-
-        function game() {
-            render(gameObject);
-            window.requestAnimationFrame(game);
-        } window.requestAnimationFrame(game);
-
-        socket.on('update', (sentGameObject) => {
-            gameObject = sentGameObject;
-            for (let i = 0; i < gameObject.orders.length; i++) {
-                if (gameObject == undefined) break;
-			    if (gameObject.orders[i].id == socket.id) {
-                    order = gameObject.orders[i].order;
-                }
-            }
-            step = Date.now() - lastTime;
-            lastTime = Date.now();
-            xf += ((kp.right * step / 2) + (-kp.left * step / 2)) * ((kp.up || kp.down) ? .707 : 1);
-            yf += ((kp.down * step / 2) + (-kp.up * step / 2)) * ((kp.left || kp.right) ? .707 : 1);
-            if (gameObject.circles.length > order) {
-                socket.emit('action', { x: xf / gameObject.circles[order].r, y: yf / gameObject.circles[order].r, angle: angle });
-            }
-            xf -= xf / 30;
-            yf -= yf / 30;
-        });
-        socket.on('start', () => {
-            game();
-        });
-    </script>
+    <script src="scripts/game.js"></script>
 </body>
+
 </html>
