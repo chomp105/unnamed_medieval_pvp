@@ -14,11 +14,11 @@ app.get('/', (req, res) => {
 });
 
 for (let i = 0; i < 10; i++) {
-    chomp.circles.push(new engine.Circle(Math.random() * 2000, Math.random() * 2000, Math.floor(Math.random() * 50) + 100, 1, Math.random() * 6, 0, 'tree'));
+    chomp.circles.push(new engine.Circle(Math.round(Math.random() * 2000), Math.round(Math.random() * 2000), Math.floor(Math.random() * 50) + 100, 1, Math.random() * 6, 0, 'tree'));
 }
 
 io.on('connection', (socket) => {
-    chomp.circles.splice(players.length, 0, new engine.Circle(Math.random() * chomp.wx2, Math.random() * chomp.wy2, 50, 0, 0, 0, (players.length % 2) ? 'knight' : 'orc'));
+    chomp.circles.splice(players.length, 0, new engine.Circle(Math.round(Math.random() * chomp.wx2), Math.round(Math.random() * chomp.wy2), 50, 0, 0, 0, (players.length % 2) ? 'knight' : 'orc'));
     players.push({ id: socket.id, order: players.length, xf: 0, yf: 0 });
     socket.emit('update', { circles: chomp.circles, lines: chomp.lines, wx1: chomp.wx1, wy1: chomp.wy1, wx2: chomp.wx2, wy2: chomp.wy2, players: players });
     socket.emit('start');
@@ -54,6 +54,19 @@ setInterval(() => {
             players[i].yf -= players[i].yf / 30;
             chomp.circles[players[i].order].angle = players[i].action.angle;
             chomp.circles[players[i].order].animation_angle = players[i].action.animation_angle;
+            if (players[i].action.mousedown) {
+                for (let j = 0; j < chomp.circles.length; j++) {
+                    if (j == players[i].order) continue;
+                    let hitdist = Math.sqrt(Math.pow(chomp.circles[players[i].order].x - chomp.circles[j].x, 2) + Math.pow(chomp.circles[players[i].order].y - chomp.circles[j].y, 2));
+                    if (hitdist < 100) {
+                        console.log([chomp.circles[players[i].order].x, chomp.circles[players[i].order].y, 100, 1]);
+                        let hitcircle = engine.Circle(chomp.circles[players[i].order].x, chomp.circles[players[i].order].y, 100, 1);
+                        console.log(hitcircle);
+                        let hitCol = engine.CircleCircleCollision(hitcircle, chomp.circles[j], 150 - hitdist, hitdist);
+                        chomp.circleCircleCollisions.push(hitCol);
+                    }
+                }
+            }
         }
     }
     step = Date.now() - lastTime;
@@ -67,17 +80,3 @@ setInterval(() => {
 server.listen(3000, () => {
     console.log('listening on *:3000');
 });
-
-/*
-if (players[i].action.mousedown) {
-                for (let j = 0; j < chomp.circles.length; j++) {
-                    if (j == players[i].order) continue;
-                    let hitdist = Math.sqrt(Math.pow(chomp.circles[players[i].order].x - chomp.circles[j].x, 2) + Math.pow(chomp.circles[players[i].order].y - chomp.circles[j].y, 2));
-                    if (hitdist < 100) {
-                        console.log("pow");
-                        let hitcircle = engine.Circle(chomp.circles[players[i].order].x, chomp.circles[players[i].order].y, 100, 1);
-                        let hitCol = engine.CircleCircleCollision(hitcircle, chomp.circles[j], 150 - hitdist, hitdist);
-                        chomp.circleCircleCollisions.push(hitCol);
-                    }
-                }
-            } */
