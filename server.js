@@ -4,8 +4,7 @@ const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
-const engine = require('chompengine');
-//const { publicDecrypt } = require('crypto');
+const engine = require('chompengine');                          // const { publicDecrypt } = require('crypto'); <-- idk what this is or how it got here
 const chomp = new engine.Chomp(0, 0, 2000, 2000);
 let players = [];
 
@@ -61,10 +60,24 @@ setInterval(() => {
     lastTime = Date.now();
     chomp.wallCollisions();
     chomp.checkCircleCircleCollisions();
-    chomp.resolveCircleCircleCollisions();
+    chomp.resolveCircleCircleCollisions();    
     io.sockets.emit('update', { circles: chomp.circles, lines: chomp.lines, wx1: chomp.wx1, wy1: chomp.wy1, wx2: chomp.wx2, wy2: chomp.wy2, players: players });
-}, 1000 / 120);
+}, 1000 / 240);
 
 server.listen(3000, () => {
     console.log('listening on *:3000');
 });
+
+/*
+if (players[i].action.mousedown) {
+                for (let j = 0; j < chomp.circles.length; j++) {
+                    if (j == players[i].order) continue;
+                    let hitdist = Math.sqrt(Math.pow(chomp.circles[players[i].order].x - chomp.circles[j].x, 2) + Math.pow(chomp.circles[players[i].order].y - chomp.circles[j].y, 2));
+                    if (hitdist < 100) {
+                        console.log("pow");
+                        let hitcircle = engine.Circle(chomp.circles[players[i].order].x, chomp.circles[players[i].order].y, 100, 1);
+                        let hitCol = engine.CircleCircleCollision(hitcircle, chomp.circles[j], 150 - hitdist, hitdist);
+                        chomp.circleCircleCollisions.push(hitCol);
+                    }
+                }
+            } */
